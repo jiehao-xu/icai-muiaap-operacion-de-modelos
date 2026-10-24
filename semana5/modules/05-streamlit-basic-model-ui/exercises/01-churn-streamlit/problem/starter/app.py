@@ -5,6 +5,9 @@ from typing import Any
 
 from churn_demo.model import ChurnPrediction, predict
 
+import streamlit as st
+from streamlit.testing.v1 import AppTest
+
 Predictor = Callable[..., ChurnPrediction]
 
 
