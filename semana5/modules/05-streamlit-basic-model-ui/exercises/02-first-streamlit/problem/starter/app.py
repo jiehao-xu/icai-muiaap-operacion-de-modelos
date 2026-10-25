@@ -10,7 +10,6 @@ from typing import Any
 from model_ui.contracts import PredictionPayload
 from model_ui.errors import ArtifactUnavailableError, InputContractError
 from model_ui.gateway import InferenceGateway, PackagedBundleGateway
-from model_ui.ui_schema import FIELD_SPECS
 
 
 def build_gateway() -> InferenceGateway:
@@ -42,21 +41,125 @@ def render_inference_error(st: Any) -> None:
 def collect_values(st: Any) -> tuple[bool, dict[str, float]]:
     """TODO: renderiza ``FIELD_SPECS`` dentro de un único ``st.form``.
 
-    Cada ``number_input`` debe recibir label, rango, default, step y una key
+    Cada ``number_input`` debe recibir label, rango, value, step y una key
     estable. Devuelve ``(submitted, values)`` sin llamar al gateway.
     """
+    with st.form("wine_quality_form"):
+        fixed = st.number_input(
+            label="Acidez fija",
+            min_value=0.0,
+            max_value=20.0,
+            value=7.4,
+            step=0.1,
+            key="input_fixed_acidity",
+        )
+        volatile = st.number_input(
+            label="Acidez volátil",
+            min_value=0.0,
+            max_value=2.0,
+            value=0.7,
+            step=0.01,
+            key="input_volatile_acidity",
+        )
+        citric = st.number_input(
+            label="Ácido cítrico",
+            min_value=0.0,
+            max_value=2.0,
+            value=0.0,
+            step=0.01,
+            key="input_citric_acid",
+        )
+        sugar = st.number_input(
+            label="Azúcar residual",
+            min_value=0.0,
+            max_value=20.0,
+            value=1.9,
+            step=0.1,
+            key="input_residual_sugar",
+        )
+        chlorides = st.number_input(
+            label="Cloruros",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.076,
+            step=0.001,
+            key="input_chlorides",
+        )
+        free_sulfur = st.number_input(
+            label="Dióxido de azufre libre",
+            min_value=0.0,
+            max_value=100.0,
+            value=11.0,
+            step=1.0,
+            key="input_free_sulfur_dioxide",
+        )
+        total_sulfur = st.number_input(
+            label="Dióxido de azufre total",
+            min_value=0.0,
+            max_value=300.0,
+            value=34.0,
+            step=1.0,
+            key="input_total_sulfur_dioxide",
+        )
 
-    raise NotImplementedError(
-        f"TODO: renderiza los {len(FIELD_SPECS)} campos de FIELD_SPECS"
-    )
+        density = st.number_input(
+            label="Densidad",
+            min_value=0.98,
+            max_value=1.01,
+            value=0.9978,
+            step=0.0001,
+            key="input_density",
+        )
+
+        ph = st.number_input(
+            label="pH",
+            min_value=2.5,
+            max_value=4.5,
+            value=3.51,
+            step=0.01,
+            key="input_ph",
+        )
+        sulphates = st.number_input(
+            label="Sulfatos",
+            min_value=0.0,
+            max_value=3.0,
+            value=0.56,
+            step=0.01,
+            key="input_sulphates",
+        )
+        alcohol = st.number_input(
+            label="Alcohol",
+            min_value=5.0,
+            max_value=20.0,
+            value=9.4,
+            step=0.1,
+            key="input_alcohol",
+        )
+        submitted = st.form_submit_button("Ejecutar inferencia")
+
+    data = {
+        "fixed_acidity": fixed,
+        "volatile_acidity": volatile,
+        "citric_acid": citric,
+        "residual_sugar": sugar,
+        "chlorides": chlorides,
+        "free_sulfur_dioxide": free_sulfur,
+        "total_sulfur_dioxide": total_sulfur,
+        "density": density,
+        "ph": ph,
+        "sulphates": sulphates,
+        "alcohol": alcohol,
+    }
+    return submitted, data
 
 
 def render_prediction(st: Any, prediction: PredictionPayload) -> None:
     """TODO: presenta los cuatro campos de ``PredictionPayload``."""
 
-    raise NotImplementedError(
-        "TODO: presenta quality_band, confidence y las dos versiones"
-    )
+    st.write(f"quality_band: {prediction.quality_band}")
+    st.write(f"confidence: {prediction.confidence}")
+    st.write(f"model_version: {prediction.model_version}")
+    st.write(f"preprocessing_version: {prediction.preprocessing_version}")
 
 
 def run_app(st: Any, gateway: InferenceGateway) -> None:
