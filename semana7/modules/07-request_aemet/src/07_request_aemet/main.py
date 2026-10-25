@@ -48,6 +48,6 @@ print(response_clima_ciu)
 # Escribimos los datos
 
 df = pd.DataFrame(response_clima_ciu)
-output_path = Path("assets/datos_emet_ciu.csv")
+output_path = Path("assets/datos_aemet_ciu.csv")
 output_path.parent.mkdir(parents=True, exist_ok = True)
 df.to_csv(output_path, index = False)
