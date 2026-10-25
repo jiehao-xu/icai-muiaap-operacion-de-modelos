@@ -7,7 +7,7 @@ practicar el consumo de una API antes de exponer un modelo como servicio.
 
 ## Qué se ha implementado
 
-El script [main.py](src/07_request_amet/main.py) realiza esta secuencia:
+El script [main.py](src/07_request_aemet/main.py) realiza esta secuencia:
 
 1. Consulta el inventario de estaciones con `requests.get()`, enviando la
    credencial en el encabezado `api_key` y usando `timeout=30`.
@@ -37,7 +37,7 @@ local desde un archivo `.env`.
 Desde la raíz del repositorio, en Git Bash o PowerShell:
 
 ```bash
-cd semana7/modules/07-request_amet
+cd semana7/modules/07-request_aemet
 uv sync --locked
 cp .env.example .env
 ```
@@ -52,7 +52,7 @@ Si ya tienes un `.env` configurado, consérvalo y omite la copia. Después ejecu
 desde el directorio del módulo:
 
 ```bash
-uv run python -m 07_request_amet.main
+uv run python -m 07_request_aemet.main
 ```
 
 Se necesita acceso a Internet y una API key válida de AEMET.
@@ -63,7 +63,7 @@ en la terminal; por defecto, `load_dotenv()` conserva las variables ya
 definidas. `.gitignore` excluye `.env`, `.venv` y `__pycache__/`; el archivo
 `.env.example` sirve como plantilla sin credenciales reales.
 
-Utiliza el comando `python -m` indicado: el ejecutable `07-request-amet`
+Utiliza el comando `python -m` indicado: el ejecutable `07-request-aemet`
 declarado en el proyecto apunta por ahora al saludo de `__init__.py`, no a la
 consulta de datos.
 

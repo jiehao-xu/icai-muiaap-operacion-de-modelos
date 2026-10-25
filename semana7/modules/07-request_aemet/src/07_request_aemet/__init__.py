@@ -1,2 +1,2 @@
 def main() -> None:
-    print("Hello from 07-request-amet!")
+    print("Hello from 07-request-aemet!")
