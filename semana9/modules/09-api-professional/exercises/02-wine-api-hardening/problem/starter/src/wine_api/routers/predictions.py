@@ -3,7 +3,9 @@ from dataclasses import asdict
 from fastapi import APIRouter
 
 from wine_api.dependencies import PredictorDep, RequestIdDep
-from wine_api.schemas import PredictionRequest
+from wine_api.schemas import PredictionRequest, PredictionResponse
+from datetime import datetime, UTC
+from zoneinfo import ZoneInfo
 
 # TODO S9.3a: mueve aquí `prefix="/v1/predictions"` y `tags=["predictions"]`.
 # TODO S9.3c: declara a nivel de router `responses=` para 400, 422 y 503 con
@@ -17,7 +19,7 @@ def create_prediction(
     payload: PredictionRequest,
     predictor: PredictorDep,
     request_id: RequestIdDep,
-):
+) -> PredictionResponse:
     # TODO S9.3e: añade summary, response_description y un docstring útil para
     # quien consume la API (campos, rangos, decimales de confidence).
     # TODO S9.3f: ofrece en Swagger al menos tres ejemplos de cuerpo (uno válido
@@ -27,4 +29,10 @@ def create_prediction(
     # TODO S9.1e: este dict expone `raw_score` y la confianza sin redondear.
     # Declara `-> PredictionResponse` y construye el modelo; para pasar de la
     # dataclass ModelOutput a Prediction investiga `from_attributes=True`.
-    return {"prediction": asdict(output), "request_id": request_id}
+   
+    return PredictionResponse(
+            prediction = output,
+            request_id = request_id,
+            served_at = datetime.now(ZoneInfo("Europe/Madrid")),
+            from_attributes= True
+        )

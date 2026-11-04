@@ -19,10 +19,11 @@ def read_health(predictor: PredictorDep, request_id: RequestIdDep):
     if not predictor.is_ready():
         raise HTTPException(status_code=503, detail="Model not ready")
     # TODO S9.1d: declara `-> HealthResponse` y devuelve una instancia.
-    return {
+    
+    return HealthResponse({
         "status": "ok",
         "service": SERVICE_NAME,
         "model_status": "ready",
         "model_version": predictor.model_version,
         "request_id": request_id,
-    }
+    })
