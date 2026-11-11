@@ -28,6 +28,77 @@ def leer_argumentos(texto):
 
 
 # TODO: definir_tool() -> dict con la definicion de la tool, sacando "parameters" de PrestamoEntrada
+def definir_tool() -> dict:
+    return {
+        "type": "function",
+        "function": {
+            "name": NOMBRE_TOOL,
+            "description": "Predice la probabilidad de impago de un préstamo",
+            "parameters": PrestamoEntrada.model_json_schema()
+        }
+    }
 # TODO: ejecutar_tool(nombre, argumentos_json) -> dict con "ok" True/False
 #       (tool desconocida, JSON roto, datos invalidos o campos inventados -> ok False con el error)
+def ejecutar_tool(nombre, argumentos_json) -> dict:
+
+    if nombre != NOMBRE_TOOL:
+        return {"ok": False, "error": "tool desconocida"}
+
+    datos = leer_argumentos(argumentos_json)
+
+    try:
+        datos_validados = PrestamoEntrada(**datos)
+    except ValidationError as error:
+        return {"ok": False, "error": str(error)}
+
+    result = predecir(datos_validados)
+
+    return {
+        "ok": True,
+        "probabilidad_impago": result.probabilidad_impago,
+        "decision": result.decision,
+    }
 # TODO: responder(mensajes, llm) -> ChatSalida, con el bucle LLM -> tool -> LLM (maximo MAX_VUELTAS)
+def responder(mensajes, llm) -> ChatSalida:
+    historial = [{"role": "system", "content": SISTEMA}]
+    historial.extend(mensaje.model_dump() for mensaje in mensajes)
+
+    herramientas = [definir_tool()]
+    ultima_herramienta = None
+
+    for _ in range(MAX_VUELTAS):
+        respuesta_llm = llm.completar(historial, herramientas)
+        llamadas = respuesta_llm.get("tool_calls") or []
+
+        # Si el LLM responde con texto, terminamos.
+        if not llamadas:
+            return ChatSalida(
+                respuesta=respuesta_llm.get("content") or "No se ha recibido una respuesta.",
+                herramienta=ultima_herramienta,
+            )
+
+        # Guardamos la petición del asistente antes de sus resultados.
+        historial.append(respuesta_llm)
+
+        for llamada in llamadas:
+            nombre = llamada["function"]["name"]
+            argumentos_json = llamada["function"]["arguments"]
+
+            resultado = ejecutar_tool(nombre, argumentos_json)
+
+            ultima_herramienta = HerramientaUsada(
+                nombre=nombre,
+                argumentos=leer_argumentos(argumentos_json),
+                resultado=resultado,
+            )
+
+            historial.append({
+                "role": "tool",
+                "tool_call_id": llamada["id"],
+                "content": json.dumps(resultado, ensure_ascii=False),
+            })
+
+    return ChatSalida(
+        respuesta="No se ha podido completar la operación en el máximo de intentos.",
+        herramienta=ultima_herramienta,
+    )

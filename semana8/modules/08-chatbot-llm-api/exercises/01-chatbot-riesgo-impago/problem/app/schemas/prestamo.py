@@ -8,12 +8,12 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class PrestamoEntrada(BaseModel):
     model_cofig = ConfigDict(extra="forbid")
 
-    edad: int = Field(ge=18, le= 75)
-    ingresos_mensuales: float = Field(gt= 0)
-    importe_prestamo: float = Field(gt = 0)
-    plazo_meses: int = Field(ge=6, le=84)
-    antiguedad_laboral_anios: int= Field(ge=0, le=50)
-    impagos_avios: int = Field(ge= 0, le= 20)
+    edad: int = Field(ge=18, le= 75, description = "Edad del usuario")
+    ingresos_mensuales: float = Field(gt= 0, description = "Ingresos mensuales del usuario")
+    importe_prestamo: float = Field(gt = 0, description = "Importe del prestamo del usuario")
+    plazo_meses: int = Field(ge=6, le=84, description = "Número de meses que tiene el usuario para devolver el prestamo")
+    antiguedad_laboral_anios: int= Field(ge=0, le=50, description = "Antiguedad laboral del usuario en años")
+    impagos_avios: int = Field(ge= 0, le= 20, description = "Número de veces que el usuario ha incumplido los pagos")
 
 
 # TODO: field_validator (con classmethod) para antiguedad_laboral_anios: no puede ser incoherente con la edad.
@@ -27,7 +27,7 @@ class PrestamoEntrada(BaseModel):
 @classmethod()
 def antiguedad_laboral_anios(cls, value, info):
     edad = info.data.get("edad")
-    if(value is not None > edad - 16):
+    if edad is not None and value is not None and value > edad - 16:
         raise ValueError("Siendo menor ha trabajado")
     return value
 
