@@ -19,7 +19,7 @@ MODEL = joblib.load(MODEL_PATH)
 # TODO: funcion decidir(probabilidad) -> "aprobar", "revisar" o "rechazar" (umbrales en el enunciado)
 def decidir(probabilidad):
     if probabilidad < 0.2:
-        return "aprobado"
+        return "aprobar"
     elif probabilidad < 0.5:
         return "revisar"
     else:
@@ -32,6 +32,5 @@ def predecir(entrada):
 
     probabilidad = MODEL.predict_proba(X)[0][1]
     etiqueta = decidir(probabilidad)
-    
+
     return PrediccionSalida(probabilidad_impago = probabilidad, decision = etiqueta)
-        

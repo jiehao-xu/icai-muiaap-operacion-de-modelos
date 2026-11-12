@@ -51,13 +51,16 @@ def ejecutar_tool(nombre, argumentos_json) -> dict:
     except ValidationError as error:
         return {"ok": False, "error": str(error)}
 
-    result = predecir(datos_validados)
-
-    return {
-        "ok": True,
-        "probabilidad_impago": result.probabilidad_impago,
-        "decision": result.decision,
-    }
+    try:
+        result = predecir(datos_validados)
+        return {
+            "ok": True,
+            "probabilidad_impago": result.probabilidad_impago,
+            "decision": result.decision,
+        }
+    except Exception:
+        # La frontera de la tool convierte los fallos del modelo en un resultado para el LLM.
+        return {"ok": False, "error": "No se ha podido calcular el riesgo: fallo del modelo."}
 # TODO: responder(mensajes, llm) -> ChatSalida, con el bucle LLM -> tool -> LLM (maximo MAX_VUELTAS)
 def responder(mensajes, llm) -> ChatSalida:
     historial = [{"role": "system", "content": SISTEMA}]
