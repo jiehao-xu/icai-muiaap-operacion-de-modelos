@@ -1,45 +1,71 @@
-"""S9.4 — Tests que escribe el alumnado.
+"""S9.4 — Evidencias del contrato: disponibilidad, rangos y OpenAPI."""
 
-Cada test empieza en rojo con `pytest.fail`. Sustituye esa línea por el test
-real; la entrega se considera completa cuando toda la suite está en verde.
-"""
+import json
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
-from wine_api.dependencies import get_predictor  # noqa: F401 - pista S9.4a
-from wine_api.predictor import UnavailablePredictor  # noqa: F401 - pista S9.4a
+from wine_api.dependencies import get_predictor
+from wine_api.export_openapi import render_openapi
+from wine_api.predictor import UnavailablePredictor
 
 
 def test_prediction_returns_503_when_model_is_unavailable(
-    client: TestClient, valid_payload: dict
+    client: TestClient, valid_payload: dict, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # TODO S9.4a: sin tocar el código de la API, haz que `get_predictor`
-    # devuelva un UnavailablePredictor con `app.dependency_overrides` (llega
-    # desde `client.app`). Comprueba status 503 y `error.code`. Limpia el
-    # override al terminar para no contaminar otros tests.
-    pytest.fail("TODO S9.4a")
+    # Restaura cualquier override previo incluso si falla un assert.
+    with monkeypatch.context() as overrides:
+        overrides.setitem(
+            client.app.dependency_overrides,
+            get_predictor,
+            lambda: UnavailablePredictor(),
+        )
+        response = client.post("/v1/predictions", json=valid_payload)
+
+    assert response.status_code == 503
+    body = response.json()
+    assert body["error"]["code"] == "model_unavailable"
+    assert body["request_id"] == response.headers["X-Request-Id"]
+    assert "detail" not in body
 
 
-def test_out_of_contract_values_are_rejected(
-    client: TestClient, valid_payload: dict
+@pytest.mark.parametrize(
+    ("value", "expected_status"),
+    [
+        pytest.param(4.99, 422, id="below-minimum"),
+        pytest.param(20.01, 422, id="above-maximum"),
+        pytest.param(None, 422, id="null"),
+        pytest.param("not-a-number", 422, id="text"),
+        pytest.param(True, 422, id="boolean"),
+        pytest.param(5.0, 200, id="inclusive-minimum"),
+        pytest.param(20.0, 200, id="inclusive-maximum"),
+    ],
+)
+def test_alcohol_contract(
+    client: TestClient, valid_payload: dict, value: object, expected_status: int
 ) -> None:
-    # TODO S9.4b: convierte este test en `@pytest.mark.parametrize` con al
-    # menos cinco casos (justo por debajo y por encima de un rango, None, un
-    # texto...). Para cada uno comprueba 422 y que `fields` señala exactamente
-    # `features.<campo>`.
-    pytest.fail("TODO S9.4b")
+    """Rechaza entradas inválidas y acepta ambos límites inclusivos."""
+    valid_payload["features"]["alcohol"] = value
+    response = client.post("/v1/predictions", json=valid_payload)
 
-
-def test_range_limits_are_inclusive(client: TestClient, valid_payload: dict) -> None:
-    # TODO S9.4c: los límites del contrato son inclusivos. Demuéstralo con los
-    # dos extremos de `alcohol` (5 y 20): ambos deben devolver 200.
-    pytest.fail("TODO S9.4c")
+    assert response.status_code == expected_status
+    body = response.json()
+    if expected_status == 422:
+        assert body["error"]["code"] == "validation_error"
+        assert [item["field"] for item in body["error"]["fields"]] == [
+            "features.alcohol"
+        ]
+    else:
+        assert 0 <= body["prediction"]["confidence"] <= 1
 
 
 def test_openapi_matches_versioned_contract() -> None:
-    # TODO S9.4d: genera `contracts/openapi.json` con
-    # `uv run python -m wine_api.export_openapi` y versiónalo en Git. Después
-    # compara el JSON de `render_openapi()` con el archivo: si alguien cambia el
-    # contrato sin querer, este test lo detecta en la revisión.
-    pytest.fail("TODO S9.4d")
+    # Ruta independiente del directorio desde el que se invoque pytest.
+    snapshot = Path(__file__).resolve().parents[1] / "contracts" / "openapi.json"
+    assert snapshot.is_file(), (
+        "Genera el contrato con: uv run python -m wine_api.export_openapi"
+    )
+    assert json.loads(render_openapi()) == json.loads(
+        snapshot.read_text(encoding="utf-8")
+    )

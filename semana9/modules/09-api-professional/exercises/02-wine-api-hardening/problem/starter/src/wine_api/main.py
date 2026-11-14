@@ -15,7 +15,7 @@ from wine_api.routers import health, predictions
 # `version` (¿mayor, menor o parche tras S9.1c?), `summary`, una `description`
 # en Markdown que explique `request_id` y el sobre de error, y `openapi_tags`
 # con una descripción por tag. Comprobación: tests/test_s9_3_openapi.py
-API_VERSION = "1.0.0"
+API_VERSION = "1.1.0"
 
 
 def create_app(predictor: Predictor | None = None) -> FastAPI:
@@ -28,7 +28,43 @@ def create_app(predictor: Predictor | None = None) -> FastAPI:
         )
         yield
 
-    app = FastAPI(title="Wine Quality API", version=API_VERSION, lifespan=lifespan)
+    app = FastAPI(
+        title="Wine Quality API",
+        version=API_VERSION,
+        summary="Predicción de calidad del vino a partir de sus propiedades fisicoquímicas.",
+        description=""" 
+        Cada petición recibe un identificador que se devuelve en la cabecera
+        `X-Request-Id`. En las respuestas de error también aparece en el cuerpo
+        como `request_id`, para relacionar la respuesta con los logs del servicio.
+
+        ## Formato de los errores
+
+        Las respuestas de error utilizan un sobre común:
+
+        - `error.code`: código que identifica el tipo de error.
+        - `error.message`: explicación comprensible del problema.
+        - `error.fields`: detalles de los campos inválidos, cuando corresponde.
+        - `request_id`: identificador de la petición.
+
+        """,
+        openapi_tags=[
+            {
+                "name": "health",
+                "description": (
+                    "Consulta del estado del servicio "
+                    "y de la disponibilidad del modelo."
+                ),
+            },
+            {
+                "name": "predictions",
+                "description": (
+                    "Predicciones de calidad del vino a partir "
+                    "de sus propiedades fisicoquímicas."
+                ),
+            },
+        ],
+        lifespan=lifespan
+    )
     app.middleware("http")(request_id_middleware)
     install_error_handlers(app)
     app.include_router(health.router)
